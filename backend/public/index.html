@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Video Platform</title>
+<style>body{font-family:system-ui;max-width:800px;margin:2rem auto;padding:0 1rem}video{width:100%;background:#000}li{margin:.4rem 0}</style>
+<h1>Video Platform</h1>
+<input id="title" placeholder="Title"> <input id="file" type="file" accept="video/*">
+<button onclick="up()">Upload</button> <span id="msg"></span>
+<video id="player" controls></video>
+<ul id="list"></ul>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script>
+async function up(){
+  const f=document.getElementById('file').files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file',f); fd.append('title',document.getElementById('title').value||f.name);
+  msg.textContent='Uploading...';
+  await fetch('/api/videos',{method:'POST',body:fd}); msg.textContent='Uploaded — processing'; load();
+}
+function play(url){
+  const v=document.getElementById('player');
+  if(v.canPlayType('application/vnd.apple.mpegurl')) v.src=url;
+  else if(Hls.isSupported()){const h=new Hls();h.loadSource(url);h.attachMedia(v);}
+  v.play();
+}
+async function load(){
+  const vids=await (await fetch('/api/videos')).json();
+  list.innerHTML=vids.map(v=>`<li>${v.title} — <b>${v.status}</b> ${v.hlsUrl?`<a href="#" onclick="play('${v.hlsUrl}');return false">▶ play</a>`:''}</li>`).join('');
+}
+load(); setInterval(load,5000);
+</script>
